@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\LaporanTransaksiExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -81,4 +83,28 @@ class LaporanTransaksiController extends Controller
             'pesanSukses' => session('pesanSukses'),
         ]);
     }
+    
+    public function exportExcel(Request $request)
+    {
+        $tanggal = $request->query(
+            'tanggal',
+            session('tanggal_laporan', now()->toDateString())
+        );
+
+        $transaksi = DB::table('laporan_transaksi')
+            ->whereDate('waktu_transaksi', $tanggal)
+            ->where('status', 'SUCCESS')
+            ->orderBy('waktu_transaksi', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return (array) $item;
+            })
+            ->all();
+
+        return Excel::download(
+            new LaporanTransaksiExport($transaksi),
+            'laporan-transaksi-' . $tanggal . '.xlsx'
+        );
+    }
+
 }

@@ -12,3 +12,8 @@ Route::post('/laporan-transaksi/ambil-data', [LaporanTransaksiController::class,
 
 Route::get('/laporan', [LaporanTransaksiController::class, 'index'])
     ->name('laporan.index');
+
+Route::get('/laporan/export-excel', [
+    \App\Http\Controllers\LaporanTransaksiController::class,
+    'exportExcel'
+])->name('laporan-transaksi.export-excel');

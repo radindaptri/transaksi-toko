@@ -109,16 +109,41 @@
     </section>
 
     <section class="panel" id="data-transaksi">
+   
         <div class="panel-heading">
             <div>
                 <h2>Data Transaksi</h2>
                 <p>Daftar transaksi yang ditampilkan pada laporan.</p>
             </div>
-            <span class="status">Laporan</span>
+
+            <div class="panel-actions">
+                <span class="status">Laporan</span>
+
+                <a
+                    href="{{ route('laporan-transaksi.export-excel', ['tanggal' => $tanggal]) }}"
+                    class="btn btn-primary"
+                >
+                    Ekspor Excel
+                </a>
+            </div>
+        </div>
+
+        {{-- PERBAIKAN 1: Input pencarian --}}
+        <div class="search-box">
+            <input
+                type="text"
+                id="searchTransaksi"
+                placeholder="Cari kode transaksi..."
+                aria-label="Cari kode transaksi"
+                autocomplete="off"
+            >
+            <span id="hasilPencarian" aria-live="polite"></span>
         </div>
 
         <div class="table-wrap">
-            <table>
+
+            {{-- PERBAIKAN 2: Tambahkan id="tabelTransaksi" --}}
+            <table id="tabelTransaksi">
                 <thead>
                     <tr>
                         <th>No.</th>
@@ -133,12 +158,15 @@
                     @forelse ($transaksi as $item)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
+
                             <td class="trx-code">
                                 {{ $item['kode_transaksi'] ?? '-' }}
                             </td>
+
                             <td class="amount">
                                 Rp {{ number_format((float) ($item['total_nominal'] ?? 0), 0, ',', '.') }}
                             </td>
+
                             <td>
                                 @if (strtoupper($item['status'] ?? '') === 'SUCCESS')
                                     <span class="status">SUCCESS</span>
@@ -146,6 +174,7 @@
                                     {{ $item['status'] ?? '-' }}
                                 @endif
                             </td>
+
                             <td>{{ $item['waktu_transaksi'] ?? '-' }}</td>
                         </tr>
                     @empty
@@ -174,13 +203,67 @@
 @endsection
 
 @push('scripts')
+
+{{-- PERBAIKAN 3: Script pencarian dijalankan setelah DOM siap --}}
 <script>
-    document.getElementById('ambilDataForm').addEventListener('submit', function () {
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('searchTransaksi');
+    const tabel = document.getElementById('tabelTransaksi');
+    const hasilPencarian = document.getElementById('hasilPencarian');
+
+    if (!searchInput || !tabel) {
+        console.error('Elemen pencarian atau tabel transaksi tidak ditemukan.');
+        return;
+    }
+
+    searchInput.addEventListener('input', function () {
+        const keyword = this.value.trim().toLowerCase();
+        const rows = tabel.querySelectorAll('tbody tr');
+        let jumlahCocok = 0;
+
+        rows.forEach(function (row) {
+            const kode = row.querySelector('.trx-code');
+
+            // Lewati baris pesan jika belum ada transaksi.
+            if (!kode) return;
+
+            const cocok = kode.textContent
+                .trim()
+                .toLowerCase()
+                .includes(keyword);
+
+            row.style.display = cocok ? '' : 'none';
+
+            if (cocok) {
+                jumlahCocok++;
+            }
+        });
+
+        if (hasilPencarian) {
+            hasilPencarian.textContent = keyword
+                ? jumlahCocok + ' transaksi ditemukan'
+                : '';
+        }
+    });
+});
+</script>
+
+{{-- Script lama: tombol Ambil Data Transaksi tetap dipertahankan --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('ambilDataForm');
+
+    if (!form) return;
+
+    form.addEventListener('submit', function () {
         const button = document.getElementById('submitBtn');
         const text = document.getElementById('submitText');
 
-        button.disabled = true;
-        text.textContent = 'Mengambil data...';
+        if (button && text) {
+            button.disabled = true;
+            text.textContent = 'Mengambil data...';
+        }
     });
+});
 </script>
 @endpush
